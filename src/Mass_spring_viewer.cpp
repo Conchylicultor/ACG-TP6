@@ -504,6 +504,32 @@ void Mass_spring_viewer::time_integration(float dt)
 
 //-----------------------------------------------------------------------------
 
+// Area of the triangle
+float computeAreaTriangle(const Triangle &triangle)
+{
+    const vec2 &pt1 = triangle.particle0->position;
+    const vec2 &pt2 = triangle.particle1->position;
+    const vec2 &pt3 = triangle.particle2->position;
+    // Using the Shoelace formula:
+    return 1.0f/2.0f * std::abs((pt1[0] - pt3[0])*(pt2[1] - pt1[1]) -
+                                (pt1[0] - pt2[0])*(pt3[1] - pt1[1]));
+}
+
+// Partial derivate with respect to pt1
+vec2 computeDerivateAreaTriangle(const vec2 &pt1, const vec2 &pt2, const vec2 &pt3)
+{
+    // Using the fact that abs(u) = sqrt(u^2)
+    // With u = x1x2 + x2x3 + x3x1 - y1y2 - y2y3 - y3y1
+    //  = u/|u| * du/dv
+    // finaly, we have dEa/dv = dEa/du * du/dv
+    // Abs is non differentiable on 0 !!!
+    float u = pt1[0]*pt2[1] + pt2[0]*pt3[1] + pt3[0]*pt1[1]
+            - pt1[0]*pt3[1] - pt3[0]*pt2[1] - pt2[0]*pt1[1];
+    //float sign = u / std::abs(u);
+    float sign = 1.0;
+    return 1.0f/2.0f * sign * vec2((pt2[1] - pt3[1]),
+                                   (pt3[0] - pt2[0]));
+}
 
 void
 Mass_spring_viewer::compute_forces()
@@ -644,7 +670,6 @@ Mass_spring_viewer::compute_forces()
         vec2 f0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length) + spring_damping_*dot(vel0-vel1, pos0-pos1)/d) * ((pos0-pos1)/d);
         nextSpring.particle0->force += f0;
         nextSpring.particle1->force -= f0;
-
     }
 
 
@@ -652,9 +677,31 @@ Mass_spring_viewer::compute_forces()
      */
     if (area_forces_)
     {
+        //For each triangle : from http://cg.informatik.uni-freiburg.de/course_notes/sim_03_masspoint.pdf
+        for (unsigned int k = 0; k < body_.triangles.size(); k++) {
+            float ka = area_stiffness_;
+            Triangle &triangle = body_.triangles[k];
+
+            float area = computeAreaTriangle(triangle);
+            float A = triangle.rest_area;
+            //std::cout << triangle.area() << " " << area << std::endl;
+            float EaFixed = ka * (triangle.area() - A);
+            //std::cout << EaFixed << std::endl;
+            // Forces
+            const vec2 &pt1 = triangle.particle0->position;
+            const vec2 &pt2 = triangle.particle1->position;
+            const vec2 &pt3 = triangle.particle2->position;
+
+            triangle.particle0->force += - EaFixed * computeDerivateAreaTriangle(pt1, pt2, pt3);
+            triangle.particle1->force += - EaFixed * computeDerivateAreaTriangle(pt2, pt3, pt1);
+            triangle.particle2->force += - EaFixed * computeDerivateAreaTriangle(pt3, pt1, pt2);
+
+            std::cout << - EaFixed * computeDerivateAreaTriangle(pt1, pt2, pt3)
+                         - EaFixed * computeDerivateAreaTriangle(pt2, pt3, pt1)
+                         - EaFixed * computeDerivateAreaTriangle(pt3, pt1, pt2)<< std::endl;
+        }
     }
 }
-
 
 //-----------------------------------------------------------------------------
 
@@ -689,7 +736,7 @@ void Mass_spring_viewer::impulse_based_collisions()
         planesP[i] = planes[i][2]/sqrtCoef;
     }
 
-    const float restitutionCoef = 0.0;
+    const float restitutionCoef = 1.0;
     for (unsigned int i=0; i<body_.particles.size(); ++i)
     {
         // Detect collision
@@ -703,7 +750,7 @@ void Mass_spring_viewer::impulse_based_collisions()
             // - DistPointPane = (a*x0 + b*y0 + c) / sqrt(a^2 + b^2)
 
             float distPointPlanes = dot(planesNorms[j], body_.particles[i].position) + planesP[j];
-            if(distPointPlanes < particle_radius_) // Collision
+            if(distPointPlanes < particle_radius_ && dot(body_.particles[i].velocity,planesNorms[j]) < 0) // Collision && check direction
             {
                 // j = -(1+e)p.n
                 float jCoeff = -(1+restitutionCoef)*dot(body_.particles[i].velocity, planesNorms[j]);
