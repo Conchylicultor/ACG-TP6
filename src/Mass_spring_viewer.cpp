@@ -518,14 +518,12 @@ float computeAreaTriangle(const Triangle &triangle)
 // Partial derivate with respect to pt1
 vec2 computeDerivateAreaTriangle(const vec2 &pt1, const vec2 &pt2, const vec2 &pt3)
 {
-    // Using the fact that abs(u) = sqrt(u^2)
-    // With u = x1x2 + x2x3 + x3x1 - y1y2 - y2y3 - y3y1
-    //  = u/|u| * du/dv
-    // finaly, we have dEa/dv = dEa/du * du/dv
-    // Abs is non differentiable on 0 !!!
+    // We differenciate the triangle area:
+    /*
     float u = pt1[0]*pt2[1] + pt2[0]*pt3[1] + pt3[0]*pt1[1]
             - pt1[0]*pt3[1] - pt3[0]*pt2[1] - pt2[0]*pt1[1];
-    //float sign = u / std::abs(u);
+    float sign = u / std::abs(u);
+    */
     float sign = 1.0;
     return 1.0f/2.0f * sign * vec2((pt2[1] - pt3[1]),
                                    (pt3[0] - pt2[0]));
@@ -677,28 +675,24 @@ Mass_spring_viewer::compute_forces()
      */
     if (area_forces_)
     {
-        //For each triangle : from http://cg.informatik.uni-freiburg.de/course_notes/sim_03_masspoint.pdf
         for (unsigned int k = 0; k < body_.triangles.size(); k++) {
             float ka = area_stiffness_;
             Triangle &triangle = body_.triangles[k];
 
-            float area = computeAreaTriangle(triangle);
+            // float area = computeAreaTriangle(triangle); // Right but useless
+            // std::cout << triangle.area() << " " << area << std::endl; // Because
+
             float A = triangle.rest_area;
-            //std::cout << triangle.area() << " " << area << std::endl;
             float EaFixed = ka * (triangle.area() - A);
-            //std::cout << EaFixed << std::endl;
+
             // Forces
             const vec2 &pt1 = triangle.particle0->position;
             const vec2 &pt2 = triangle.particle1->position;
             const vec2 &pt3 = triangle.particle2->position;
 
-            triangle.particle0->force += - EaFixed * computeDerivateAreaTriangle(pt1, pt2, pt3);
+            triangle.particle0->force += - EaFixed * computeDerivateAreaTriangle(pt1, pt2, pt3); // The 1/2 factor it inside the computeDerivateAreaTriangle
             triangle.particle1->force += - EaFixed * computeDerivateAreaTriangle(pt2, pt3, pt1);
             triangle.particle2->force += - EaFixed * computeDerivateAreaTriangle(pt3, pt1, pt2);
-
-            std::cout << - EaFixed * computeDerivateAreaTriangle(pt1, pt2, pt3)
-                         - EaFixed * computeDerivateAreaTriangle(pt2, pt3, pt1)
-                         - EaFixed * computeDerivateAreaTriangle(pt3, pt1, pt2)<< std::endl;
         }
     }
 }
