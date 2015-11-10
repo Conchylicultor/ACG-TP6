@@ -760,10 +760,10 @@ void Mass_spring_viewer::impulse_based_collisions()
 void Mass_spring_viewer::computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2 &pt2, int row, int col,float C){
     // compute the Jacobian of triangle area for one force Fpt0 and one particule pt0
 
-    DFxDptx = Fpt0[0]*(pt1[1]-pt2[1])/C;
-    DFxDpty = Fpt0[0]*(pt2[0]-pt1[0])/C;
-    DFyDptx = Fpt0[1]*(pt1[1]-pt2[1])/C;
-    DFyDpty = Fpt0[1]*(pt2[0]-pt1[0])/C;
+    float DFxDptx = Fpt0[0]*(pt1[1]-pt2[1])/C;
+    float DFxDpty = Fpt0[0]*(pt2[0]-pt1[0])/C;
+    float DFyDptx = Fpt0[1]*(pt1[1]-pt2[1])/C;
+    float DFyDpty = Fpt0[1]*(pt2[0]-pt1[0])/C;
 
     solver_.addElementToJacobian(row,col,DFxDptx);
     solver_.addElementToJacobian(row,col+1,DFyDpty);
@@ -794,9 +794,9 @@ void Mass_spring_viewer::compute_jacobians ()
           const vec2 &pt1 = triangle.particle1->position;
           const vec2 &pt2 = triangle.particle2->position;
           
-          F0 = - ka*C * computeDerivateAreaTriangle(pt0, pt1, pt2);
-          F1 = - ka*C * computeDerivateAreaTriangle(pt1, pt2, pt0);
-          F2 = - ka*C * computeDerivateAreaTriangle(pt2, pt0, pt1);
+          vec2 F0 = - ka*C * computeDerivateAreaTriangle(pt0, pt1, pt2);
+          vec2 F1 = - ka*C * computeDerivateAreaTriangle(pt1, pt2, pt0);
+          vec2 F2 = - ka*C * computeDerivateAreaTriangle(pt2, pt0, pt1);
       }
   }
   for (unsigned int i=0; i<body_.springs.size(); ++i){
