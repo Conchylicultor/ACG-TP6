@@ -765,6 +765,41 @@ void Mass_spring_viewer::compute_jacobians ()
   /** \todo (Part 2) Implement the corresponding jacobians for each of the force types.
    * Use the code from compute_forces() as the starting ground.
    */
+  for (unsigned int i=0; i<body_.springs.size(); ++i){
+      Spring &nextSpring = body_.springs[i];
+
+      vec2 pos0 = nextSpring.particle0->position;
+      vec2 pos1 = nextSpring.particle1->position;
+
+      float d = norm(pos0 - pos1);
+
+      float F0xDx0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length)) / d;
+      float F0xDy0 = 0;
+      float F0yDx0 = 0;
+      float F0yDy0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length)) / d;
+
+      unsigned int y = 2*i;
+
+      solver_.addElementToJacobian(y,y,F0xDx0);
+      solver_.addElementToJacobian(y,y + 1,F0xDy0);
+      solver_.addElementToJacobian(y + 1,y,F0yDx0);
+      solver_.addElementToJacobian(y + 1,y + 1,F0yDy0);
+
+      solver_.addElementToJacobian(y,y + 2,-1*F0xDx0);
+      solver_.addElementToJacobian(y,y + 3, -1*F0xDy0);
+      solver_.addElementToJacobian(y + 1,y + 2,-1*F0yDx0);
+      solver_.addElementToJacobian(y + 1,y + 3,-1*F0yDy0);
+
+      solver_.addElementToJacobian(y + 2,y,-1*F0xDx0);
+      solver_.addElementToJacobian(y + 2,y + 1,-1*F0xDy0);
+      solver_.addElementToJacobian(y + 3,y,-1*F0yDx0);
+      solver_.addElementToJacobian(y + 3,y + 1,-1*F0yDy0);
+
+      solver_.addElementToJacobian(y + 2,y + 2,F0xDx0);
+      solver_.addElementToJacobian(y + 2,y + 3,F0xDy0);
+      solver_.addElementToJacobian(y + 3,y + 2,F0yDx0);
+      solver_.addElementToJacobian(y + 3,y + 3,F0yDy0);
+  }
 }
 
 //=============================================================================
