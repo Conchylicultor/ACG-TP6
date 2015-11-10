@@ -757,6 +757,22 @@ void Mass_spring_viewer::impulse_based_collisions()
 
 //=============================================================================
 
+void Mass_spring_viewer::computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2 &pt2, int row, int col,float C){
+    // compute the Jacobian of triangle area for one force Fpt0 and one particule pt0
+
+    DFxDptx = Fpt0[0]*(pt1[1]-pt2[1])/C;
+    DFxDpty = Fpt0[0]*(pt2[0]-pt1[0])/C;
+    DFyDptx = Fpt0[1]*(pt1[1]-pt2[1])/C;
+    DFyDpty = Fpt0[1]*(pt2[0]-pt1[0])/C;
+
+    solver_.addElementToJacobian(row,col,DFxDptx);
+    solver_.addElementToJacobian(row,col+1,DFyDpty);
+    solver_.addElementToJacobian(row+1,col,DFyDptx);
+    solver_.addElementToJacobian(row+1,col+1,DFyDpty);
+}
+
+//=============================================================================
+
 void Mass_spring_viewer::compute_jacobians ()
 {
   /// Clear the solver matrices
@@ -765,6 +781,24 @@ void Mass_spring_viewer::compute_jacobians ()
   /** \todo (Part 2) Implement the corresponding jacobians for each of the force types.
    * Use the code from compute_forces() as the starting ground.
    */
+    if (area_forces_)
+  {
+      //For each triangle : from http://cg.informatik.uni-freiburg.de/course_notes/sim_03_masspoint.pdf
+      for (unsigned int k = 0; k < body_.triangles.size(); k++) {
+          float ka = area_stiffness_;
+          Triangle &triangle = body_.triangles[k];
+
+          float C = triangle.area()-triangle.rest_area;
+          // Sommets
+          const vec2 &pt0 = triangle.particle0->position;
+          const vec2 &pt1 = triangle.particle1->position;
+          const vec2 &pt2 = triangle.particle2->position;
+          
+          F0 = - ka*C * computeDerivateAreaTriangle(pt0, pt1, pt2);
+          F1 = - ka*C * computeDerivateAreaTriangle(pt1, pt2, pt0);
+          F2 = - ka*C * computeDerivateAreaTriangle(pt2, pt0, pt1);
+      }
+  }
   for (unsigned int i=0; i<body_.springs.size(); ++i){
       Spring &nextSpring = body_.springs[i];
 
