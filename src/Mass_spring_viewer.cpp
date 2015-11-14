@@ -521,7 +521,7 @@ void Mass_spring_viewer::time_integration(float dt)
         {
             /// The usual force computation method is called, and then the jacobian matrix dF/dx is calculated
             compute_forces ();
-            compute_jacobians ();
+            compute_jacobians (dt);
 
             /// Finally the linear system is composed and solved
             solver_.solve (dt, particle_mass_, body_.particles);
@@ -778,7 +778,7 @@ void computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2
 
 //=============================================================================
 
-void Mass_spring_viewer::compute_jacobians ()
+void Mass_spring_viewer::compute_jacobians (float dt)
 {
     /// Clear the solver matrices
     solver_.clear ();
@@ -790,25 +790,13 @@ void Mass_spring_viewer::compute_jacobians ()
     // Mouse spring
     if (mouse_spring_.active)
     {
-        /*Particle& p0 = body_.particles[ mouse_spring_.particle_index ];
-
-        vec2 pos0 = p0.position;
-        vec2 pos1 = mouse_spring_.mouse_position;
-
-        vec2 vel0 = p0.velocity;
-        vec2 vel1 = vec2(0,0);
-
-        float d = norm(pos0 - pos1);
-
-        p0.force += -1 * (spring_stiffness_*d + spring_damping_*dot(vel0-vel1, pos0-pos1)/d) * ((pos0-pos1)/d);*/
-
         // http://blog.mmacklin.com/2012/05/04/implicitsprings/
 
         Particle& part_i = body_.particles[mouse_spring_.particle_index];
 
-        if (norm(part_i.position - mouse_spring_.mouse_position) == 0) // Avoid singularity
+        vec2 pij = part_i.position - mouse_spring_.mouse_position;
+        if(norm(pij) != 0) // Avoid singularity
         {
-            vec2 pij = part_i.position - mouse_spring_.mouse_position;
             vec2 pijn = pij / norm(pij);
 
             std::cout << pij << std::endl;
@@ -816,8 +804,9 @@ void Mass_spring_viewer::compute_jacobians ()
 
             Eigen::Vector2f xij(pijn[0], pijn[1]);
             Eigen::Matrix2f xijxijt = xij*xij.transpose();
-            Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
-            //dFdxi                += -spring_damping_   * ;// Dampling term
+            //Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
+            Eigen::Matrix2f dFdxi = -spring_stiffness_ * Eigen::Matrix2f::Identity(); // Spring term
+            dFdxi                += -spring_damping_   * 1/dt * xijxijt;// Dampling term
 
             std::cout << xij << std::endl;
             std::cout << xijxijt << std::endl;

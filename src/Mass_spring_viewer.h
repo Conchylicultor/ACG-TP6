@@ -86,7 +86,7 @@ private: // simulation functions
     /// perform impulse-based collision handling
     void impulse_based_collisions();
 
-    void compute_jacobians();
+    void compute_jacobians(float dt);
 
 private: // parameter settings
     /// parameter: mass of a particle
