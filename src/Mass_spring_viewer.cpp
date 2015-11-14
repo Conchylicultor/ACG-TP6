@@ -865,7 +865,57 @@ void Mass_spring_viewer::compute_jacobians ()
     }
 
     // Force based collisions
-    // TODO
+    if (collisions_ == Force_based)
+    {
+        const int nbPanes = 4;
+        float planes[nbPanes][3] = {
+            {  0.0,  1.0, 1.0 },
+            {  0.0, -1.0, 1.0 },
+            {  1.0,  0.0, 1.0 },
+            { -1.0,  0.0, 1.0 }/*,
+            { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "nbPanes" to 5)
+        };
+
+        vec2 planesNorms[nbPanes]; // Norms of the plane
+        float planesP[nbPanes]; // Distance from the origin
+
+        for(unsigned int i=0; i<nbPanes; ++i)
+        {
+            // According to http://mathworld.wolfram.com/HessianNormalForm.html
+
+            float sqrtCoef = std::sqrt(planes[i][0]*planes[i][0] +
+                                       planes[i][1]*planes[i][1]);
+
+            planesNorms[i] = vec2(planes[i][0]/sqrtCoef,
+                                  planes[i][1]/sqrtCoef);
+
+            planesP[i] = planes[i][2]/sqrtCoef;
+        }
+
+        for (unsigned int i=0; i<body_.particles.size(); ++i)
+        {
+            for (unsigned int j=0 ; j<nbPanes ; ++j)
+            {
+                // From:
+                // - Pane equation: ax + by + c = 0
+                // - Point (x0,y0)
+                // We compute the distance according to the formula:
+                // - Dist = (ax0 + by0 + c) / sqrt(a^2 + b^2)
+
+                float distPointPlanes = dot(planesNorms[j], body_.particles[i].position) + planesP[j];
+                if(distPointPlanes < particle_radius_) // Collision
+                {
+                    vec2 dFdx = - collision_stiffness_ * planesNorms[j][0] * planesNorms[j];
+                    vec2 dFdy = - collision_stiffness_ * planesNorms[j][1] * planesNorms[j];
+
+                    solver_.addElementToJacobian(2*i,  2*i,   dFdx[0]);
+                    solver_.addElementToJacobian(2*i,  2*i+1, dFdy[0]);
+                    solver_.addElementToJacobian(2*i+1,2*i,   dFdx[1]);
+                    solver_.addElementToJacobian(2*i+1,2*i+1, dFdy[1]);
+                }
+            }
+        }
+    }
 
     // Gravitation
     // Constant force so jacobian = 0
