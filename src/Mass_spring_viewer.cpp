@@ -811,7 +811,8 @@ void Mass_spring_viewer::compute_jacobians ()
 
         Eigen::Vector2f xij(pijn[0], pijn[1]);
         Eigen::Matrix2f xijxijt = xij*xij.transpose();
-        Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt );
+        Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
+        //dFdxi                += -spring_damping_   * ;// Dampling term
 
         std::cout << dFdxi << std::endl;
 
