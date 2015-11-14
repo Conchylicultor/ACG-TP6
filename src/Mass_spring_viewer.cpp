@@ -788,12 +788,44 @@ void Mass_spring_viewer::compute_jacobians ()
    */
 
     // Mouse spring
-    // TODO
+    if (mouse_spring_.active)
+    {
+        /*Particle& p0 = body_.particles[ mouse_spring_.particle_index ];
+
+        vec2 pos0 = p0.position;
+        vec2 pos1 = mouse_spring_.mouse_position;
+
+        vec2 vel0 = p0.velocity;
+        vec2 vel1 = vec2(0,0);
+
+        float d = norm(pos0 - pos1);
+
+        p0.force += -1 * (spring_stiffness_*d + spring_damping_*dot(vel0-vel1, pos0-pos1)/d) * ((pos0-pos1)/d);*/
+
+        // http://blog.mmacklin.com/2012/05/04/implicitsprings/
+
+        Particle& part_i = body_.particles[mouse_spring_.particle_index];
+
+        vec2 pij = part_i.position - mouse_spring_.mouse_position;
+        vec2 pijn = pij / norm(pij);
+
+        Eigen::Vector2f xij(pijn[0], pijn[1]);
+        Eigen::Matrix2f xijxijt = xij*xij.transpose();
+        Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt );
+
+        std::cout << dFdxi << std::endl;
+
+        unsigned y = 2 * mouse_spring_.particle_index;
+        solver_.addElementToJacobian(y,   y,   dFdxi(0,0));
+        solver_.addElementToJacobian(y,   y+1, dFdxi(0,1));
+        solver_.addElementToJacobian(y+1, y  , dFdxi(1,0));
+        solver_.addElementToJacobian(y+1, y+1, dFdxi(1,1));
+    }
 
     // Damped springs
     // TODO
     for (unsigned int i=0; i<body_.springs.size(); ++i){
-        Spring &nextSpring = body_.springs[i];
+        /*Spring &nextSpring = body_.springs[i];
 
         vec2 pos0 = nextSpring.particle0->position;
         vec2 pos1 = nextSpring.particle1->position;
@@ -808,7 +840,8 @@ void Mass_spring_viewer::compute_jacobians ()
         // Problably wrong !
         // y should represent the particule id, not the spring id!!!
         // And it should have been two id for the two particules !!!
-        unsigned int y = 2*i;
+        unsigned int y1 = 2*nextSpring.particle0->id;
+        unsigned int y2 = 2*nextSpring.particle1->id;
 
         solver_.addElementToJacobian(y,y,F0xDx0);
         solver_.addElementToJacobian(y,y + 1,F0xDy0);
@@ -828,7 +861,7 @@ void Mass_spring_viewer::compute_jacobians ()
         solver_.addElementToJacobian(y + 2,y + 2,F0xDx0);
         solver_.addElementToJacobian(y + 2,y + 3,F0xDy0);
         solver_.addElementToJacobian(y + 3,y + 2,F0yDx0);
-        solver_.addElementToJacobian(y + 3,y + 3,F0yDy0);
+        solver_.addElementToJacobian(y + 3,y + 3,F0yDy0);*/
     }
 
     // Force based collisions
