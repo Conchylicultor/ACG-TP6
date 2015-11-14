@@ -713,6 +713,24 @@ Mass_spring_viewer::compute_forces()
     // Equilibrium forces
     if (equilibrium_forces_ && integration_ != Implicit)
     {
+        float coeffRepulsion = 0.02f;
+        for (unsigned int i = 0; i < body_.particles.size(); i++)
+        {
+            for (unsigned int j = 0; j < body_.particles.size(); j++)
+            {
+                if(i != j)
+                {
+                    const vec2 &pt1 = body_.particles.at(i).position;
+                    const vec2 &pt2 = body_.particles.at(j).position;
+
+                    float dist = norm(pt2 - pt1);
+                    vec2 direction = (pt2-pt1)/dist;
+
+                    body_.particles.at(i).force -= coeffRepulsion / (dist*dist) * direction;
+                }
+
+            }
+        }
 
     }
 }
