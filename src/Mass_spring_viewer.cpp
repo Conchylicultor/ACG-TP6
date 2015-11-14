@@ -806,21 +806,29 @@ void Mass_spring_viewer::compute_jacobians ()
 
         Particle& part_i = body_.particles[mouse_spring_.particle_index];
 
-        vec2 pij = part_i.position - mouse_spring_.mouse_position;
-        vec2 pijn = pij / norm(pij);
+        if (norm(part_i.position - mouse_spring_.mouse_position) == 0) // Avoid singularity
+        {
+            vec2 pij = part_i.position - mouse_spring_.mouse_position;
+            vec2 pijn = pij / norm(pij);
 
-        Eigen::Vector2f xij(pijn[0], pijn[1]);
-        Eigen::Matrix2f xijxijt = xij*xij.transpose();
-        Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
-        //dFdxi                += -spring_damping_   * ;// Dampling term
+            std::cout << pij << std::endl;
+            std::cout << pijn << std::endl;
 
-        std::cout << dFdxi << std::endl;
+            Eigen::Vector2f xij(pijn[0], pijn[1]);
+            Eigen::Matrix2f xijxijt = xij*xij.transpose();
+            Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
+            //dFdxi                += -spring_damping_   * ;// Dampling term
 
-        unsigned y = 2 * mouse_spring_.particle_index;
-        solver_.addElementToJacobian(y,   y,   dFdxi(0,0));
-        solver_.addElementToJacobian(y,   y+1, dFdxi(0,1));
-        solver_.addElementToJacobian(y+1, y  , dFdxi(1,0));
-        solver_.addElementToJacobian(y+1, y+1, dFdxi(1,1));
+            std::cout << xij << std::endl;
+            std::cout << xijxijt << std::endl;
+            std::cout << dFdxi << std::endl;
+
+            unsigned y = 2 * mouse_spring_.particle_index;
+            solver_.addElementToJacobian(y,   y,   dFdxi(0,0));
+            solver_.addElementToJacobian(y,   y+1, dFdxi(0,1));
+            solver_.addElementToJacobian(y+1, y  , dFdxi(1,0));
+            solver_.addElementToJacobian(y+1, y+1, dFdxi(1,1));
+        }
     }
 
     // Damped springs
