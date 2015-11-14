@@ -543,7 +543,7 @@ Mass_spring_viewer::compute_forces()
     {
         for (unsigned int i=0; i<body_.particles.size(); ++i)
         {
-            body_.particles[i].force += 20*(vec2(0,0) - body_.particles[i].position);
+            body_.particles[i].force += 20.0f*(vec2(0,0) - body_.particles[i].position);
         }
     }
 
@@ -765,6 +765,16 @@ void Mass_spring_viewer::compute_jacobians ()
   /** \todo (Part 2) Implement the corresponding jacobians for each of the force types.
    * Use the code from compute_forces() as the starting ground.
    */
+
+  if (external_force_ == Center)
+  {
+      const float centerForceStrength = 20.0f;
+      for (unsigned int i=0; i<body_.particles.size(); ++i)
+      {
+          solver_.addElementToJacobian(2*i,2*i, -1.0f * centerForceStrength);
+          solver_.addElementToJacobian(2*i+1,2*i+1, -1.0f * centerForceStrength);
+      }
+  }
 }
 
 //=============================================================================
