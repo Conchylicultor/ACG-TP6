@@ -44,6 +44,32 @@ Mass_spring_viewer(const char* _title, int _width, int _height)
     area_stiffness_      = 100000.0;
 
     mouse_spring_.active = false;
+
+
+    // Collisions
+    static float planesSaves[NB_PANES][3] = { // NOT THE CLEANEST WAY TO DO IT !!
+        {  0.0,  1.0, 1.0 },
+        {  0.0, -1.0, 1.0 },
+        {  1.0,  0.0, 1.0 },
+        { -1.0,  0.0, 1.0 }/*,
+        { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "NB_PANES" to 5)
+    };
+
+    planes = planesSaves;
+
+    // Compute the panes normal & cie for the collisions
+    for(unsigned int i=0; i<NB_PANES; ++i)
+    {
+        // According to http://mathworld.wolfram.com/HessianNormalForm.html
+
+        float sqrtCoef = std::sqrt(planes[i][0]*planes[i][0] +
+                                   planes[i][1]*planes[i][1]);
+
+        planesNorms[i] = vec2(planes[i][0]/sqrtCoef,
+                              planes[i][1]/sqrtCoef);
+
+        planesP[i] = planes[i][2]/sqrtCoef;
+    }
 }
 
 
@@ -590,37 +616,9 @@ Mass_spring_viewer::compute_forces()
     // collision forces
     if (collisions_ == Force_based)
     {
-        const int nbPanes = 4;
-        float planes[nbPanes][3] = {
-            {  0.0,  1.0, 1.0 },
-            {  0.0, -1.0, 1.0 },
-            {  1.0,  0.0, 1.0 },
-            { -1.0,  0.0, 1.0 }/*,
-            { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "nbPanes" to 5)
-        };
-
-        vec2 planesNorms[nbPanes]; // Norms of the plane
-        float planesP[nbPanes]; // Distance from the origin
-
-        for(unsigned int i=0; i<nbPanes; ++i)
-        {
-            // According to http://mathworld.wolfram.com/HessianNormalForm.html
-
-            float sqrtCoef = std::sqrt(planes[i][0]*planes[i][0] +
-                                       planes[i][1]*planes[i][1]);
-
-            planesNorms[i] = vec2(planes[i][0]/sqrtCoef,
-                                  planes[i][1]/sqrtCoef);
-
-            planesP[i] = planes[i][2]/sqrtCoef;
-        }
-
         for (unsigned int i=0; i<body_.particles.size(); ++i)
         {
-            vec2 boudaryVec(0,0);
-            bool hasCollisions = false;
-
-            for (unsigned int j=0 ; j<nbPanes ; ++j)
+            for (unsigned int j=0 ; j<NB_PANES ; ++j)
             {
                 // From:
                 // - Pane equation: ax + by + c = 0
@@ -631,14 +629,8 @@ Mass_spring_viewer::compute_forces()
                 float distPointPlanes = dot(planesNorms[j], body_.particles[i].position) + planesP[j];
                 if(distPointPlanes < particle_radius_) // Collision
                 {
-                    boudaryVec += collision_stiffness_ * (particle_radius_-distPointPlanes) * planesNorms[j];
-                    hasCollisions = true;
+                    body_.particles[i].force += collision_stiffness_ * (particle_radius_-distPointPlanes) * planesNorms[j];
                 }
-            }
-
-            if(hasCollisions)
-            {
-                body_.particles[i].force += boudaryVec;
             }
         }
     }
@@ -743,37 +735,12 @@ void Mass_spring_viewer::impulse_based_collisions()
     /** \todo (Part 2) Handle collisions based on impulses
      */
 
-    const int nbPanes = 4;
-    float planes[nbPanes][3] = {
-        {  0.0,  1.0, 1.0 },
-        {  0.0, -1.0, 1.0 },
-        {  1.0,  0.0, 1.0 },
-        { -1.0,  0.0, 1.0 }/*,
-        { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "nbPanes" to 5)
-    };
-
-    vec2 planesNorms[nbPanes]; // Norms of the plane
-    float planesP[nbPanes]; // Distance from the origin
-
-    for(unsigned int i=0; i<nbPanes; ++i)
-    {
-        // According to http://mathworld.wolfram.com/HessianNormalForm.html
-
-        float sqrtCoef = std::sqrt(planes[i][0]*planes[i][0] +
-                                   planes[i][1]*planes[i][1]);
-
-        planesNorms[i] = vec2(planes[i][0]/sqrtCoef,
-                              planes[i][1]/sqrtCoef);
-
-        planesP[i] = planes[i][2]/sqrtCoef;
-    }
-
     const float restitutionCoef = 1.0;
     for (unsigned int i=0; i<body_.particles.size(); ++i)
     {
         // Detect collision
 
-        for (unsigned int j=0 ; j<nbPanes ; ++j)
+        for (unsigned int j=0 ; j<NB_PANES ; ++j)
         {
             // From:
             // - The pane equation: ax + by + c = 0
@@ -867,34 +834,9 @@ void Mass_spring_viewer::compute_jacobians ()
     // Force based collisions
     if (collisions_ == Force_based)
     {
-        const int nbPanes = 4;
-        float planes[nbPanes][3] = {
-            {  0.0,  1.0, 1.0 },
-            {  0.0, -1.0, 1.0 },
-            {  1.0,  0.0, 1.0 },
-            { -1.0,  0.0, 1.0 }/*,
-            { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "nbPanes" to 5)
-        };
-
-        vec2 planesNorms[nbPanes]; // Norms of the plane
-        float planesP[nbPanes]; // Distance from the origin
-
-        for(unsigned int i=0; i<nbPanes; ++i)
-        {
-            // According to http://mathworld.wolfram.com/HessianNormalForm.html
-
-            float sqrtCoef = std::sqrt(planes[i][0]*planes[i][0] +
-                                       planes[i][1]*planes[i][1]);
-
-            planesNorms[i] = vec2(planes[i][0]/sqrtCoef,
-                                  planes[i][1]/sqrtCoef);
-
-            planesP[i] = planes[i][2]/sqrtCoef;
-        }
-
         for (unsigned int i=0; i<body_.particles.size(); ++i)
         {
-            for (unsigned int j=0 ; j<nbPanes ; ++j)
+            for (unsigned int j=0 ; j<NB_PANES ; ++j)
             {
                 // From:
                 // - Pane equation: ax + by + c = 0
