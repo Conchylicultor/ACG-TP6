@@ -876,21 +876,31 @@ void Mass_spring_viewer::compute_jacobians ()
     // Triangle area forces
     if (area_forces_)
     {
-        //For each triangle : from http://cg.informatik.uni-freiburg.de/course_notes/sim_03_masspoint.pdf
-        /*for (unsigned int k = 0; k < body_.triangles.size(); k++) {
+        //For each triangle
+        for (unsigned int k = 0; k < body_.triangles.size(); k++) {
             float ka = area_stiffness_;
             Triangle &triangle = body_.triangles[k];
 
             float C = triangle.area()-triangle.rest_area;
             // Sommets
-            const vec2 &pt0 = triangle.particle0->position;
-            const vec2 &pt1 = triangle.particle1->position;
-            const vec2 &pt2 = triangle.particle2->position;
+            Particle* pt[3] = {triangle.particle0, triangle.particle1, triangle.particle2};
 
-            vec2 F0 = - ka*C * computeDerivateAreaTriangle(pt0, pt1, pt2);
-            vec2 F1 = - ka*C * computeDerivateAreaTriangle(pt1, pt2, pt0);
-            vec2 F2 = - ka*C * computeDerivateAreaTriangle(pt2, pt0, pt1);
-        }*/
+
+            vec2 Fpt[3];
+            Fpt[0] = - ka*C * computeDerivateAreaTriangle(pt[0]->position, pt[1]->position, pt[2]->position);
+            Fpt[1] = - ka*C * computeDerivateAreaTriangle(pt[1]->position, pt[2]->position, pt[0]->position);
+            Fpt[2] = - ka*C * computeDerivateAreaTriangle(pt[2]->position, pt[0]->position, pt[1]->position);
+
+            // Double boucle : pour chaque force Fj et pour chaque particule pi
+            for (int pi = 0 ; pi<3 ; pi++) {
+                for (int Fj = 0 ; Fj<3; Fj++) {
+                    int row = 2*(pt[Fj]->id);
+                    int col = 2*(pt[pi%3]->id);
+                    computeJacobian_TriangleArea(Fpt[Fj],pt[(pi+1)%3]->position,pt[(pi+2)%3]->position,row,col,C,solver_);
+                }
+            }
+
+        }
     }
 }
 
