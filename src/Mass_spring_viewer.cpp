@@ -31,6 +31,7 @@ Mass_spring_viewer(const char* _title, int _width, int _height)
     animate_             = false;
     area_forces_         = false;
     show_forces_         = false;
+    equilibrium_forces_  = false;
 
     time_step_           = 0.001;
     particle_radius_     = 0.03;
@@ -205,6 +206,15 @@ void Mass_spring_viewer::keyboard(int key, int x, int y)
         }
 
 
+        // visualization of particle forces on/off
+        case 'e':
+        {
+            equilibrium_forces_ = !equilibrium_forces_;
+            glutPostRedisplay();
+            break;
+        }
+
+
         // let parent class do the work
         default:
         {
@@ -273,6 +283,10 @@ void Mass_spring_viewer::draw()
     oss.str("");
     oss << "Visualize forces: " << (show_forces_ ? "on" : "off");
     glText(20, height_-180, oss.str());
+
+    oss.str("");
+    oss << "Equilibrium forces: " << (equilibrium_forces_ ? "on" : "off");
+    glText(20, height_-200, oss.str());
 
 
     // draw walls
@@ -695,6 +709,12 @@ Mass_spring_viewer::compute_forces()
             triangle.particle2->force += - EaFixed * computeDerivateAreaTriangle(pt3, pt1, pt2);
         }
     }
+
+    // Equilibrium forces
+    if (equilibrium_forces_ && integration_ != Implicit)
+    {
+
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -757,24 +777,111 @@ void Mass_spring_viewer::impulse_based_collisions()
 
 //=============================================================================
 
+void computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2 &pt2, int row, int col,float C, ImplicitSolver &solver_){
+    // compute the Jacobian of triangle area for one force Fpt0 and one particule pt0
+
+    float DFxDptx = Fpt0[0]*(pt1[1]-pt2[1])/C;
+    float DFxDpty = Fpt0[0]*(pt2[0]-pt1[0])/C;
+    float DFyDptx = Fpt0[1]*(pt1[1]-pt2[1])/C;
+    float DFyDpty = Fpt0[1]*(pt2[0]-pt1[0])/C;
+
+    solver_.addElementToJacobian(row,col,DFxDptx);
+    solver_.addElementToJacobian(row,col+1,DFyDpty);
+    solver_.addElementToJacobian(row+1,col,DFyDptx);
+    solver_.addElementToJacobian(row+1,col+1,DFyDpty);
+}
+
+//=============================================================================
+
 void Mass_spring_viewer::compute_jacobians ()
 {
-  /// Clear the solver matrices
-  solver_.clear ();
+    /// Clear the solver matrices
+    solver_.clear ();
 
-  /** \todo (Part 2) Implement the corresponding jacobians for each of the force types.
+    /** \todo (Part 2) Implement the corresponding jacobians for each of the force types.
    * Use the code from compute_forces() as the starting ground.
    */
 
-  if (external_force_ == Center)
-  {
-      const float centerForceStrength = 20.0f;
-      for (unsigned int i=0; i<body_.particles.size(); ++i)
-      {
-          solver_.addElementToJacobian(2*i,2*i, -1.0f * centerForceStrength);
-          solver_.addElementToJacobian(2*i+1,2*i+1, -1.0f * centerForceStrength);
-      }
-  }
+    // Mouse spring
+    // TODO
+
+    // Damped springs
+    // TODO
+    for (unsigned int i=0; i<body_.springs.size(); ++i){
+        Spring &nextSpring = body_.springs[i];
+
+        vec2 pos0 = nextSpring.particle0->position;
+        vec2 pos1 = nextSpring.particle1->position;
+
+        float d = norm(pos0 - pos1);
+
+        float F0xDx0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length)) / d;
+        float F0xDy0 = 0;
+        float F0yDx0 = 0;
+        float F0yDy0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length)) / d;
+
+        // Problably wrong !
+        // y should represent the particule id, not the spring id!!!
+        // And it should have been two id for the two particules !!!
+        unsigned int y = 2*i;
+
+        solver_.addElementToJacobian(y,y,F0xDx0);
+        solver_.addElementToJacobian(y,y + 1,F0xDy0);
+        solver_.addElementToJacobian(y + 1,y,F0yDx0);
+        solver_.addElementToJacobian(y + 1,y + 1,F0yDy0);
+
+        solver_.addElementToJacobian(y,y + 2,-1*F0xDx0);
+        solver_.addElementToJacobian(y,y + 3, -1*F0xDy0);
+        solver_.addElementToJacobian(y + 1,y + 2,-1*F0yDx0);
+        solver_.addElementToJacobian(y + 1,y + 3,-1*F0yDy0);
+
+        solver_.addElementToJacobian(y + 2,y,-1*F0xDx0);
+        solver_.addElementToJacobian(y + 2,y + 1,-1*F0xDy0);
+        solver_.addElementToJacobian(y + 3,y,-1*F0yDx0);
+        solver_.addElementToJacobian(y + 3,y + 1,-1*F0yDy0);
+
+        solver_.addElementToJacobian(y + 2,y + 2,F0xDx0);
+        solver_.addElementToJacobian(y + 2,y + 3,F0xDy0);
+        solver_.addElementToJacobian(y + 3,y + 2,F0yDx0);
+        solver_.addElementToJacobian(y + 3,y + 3,F0yDy0);
+    }
+
+    // Force based collisions
+    // TODO
+
+    // Gravitation
+    // Constant force so jacobian = 0
+
+    // Center force
+    if (external_force_ == Center)
+    {
+        const float centerForceStrength = 20.0f;
+        for (unsigned int i=0; i<body_.particles.size(); ++i)
+        {
+            solver_.addElementToJacobian(2*i,2*i, -1.0f * centerForceStrength);
+            solver_.addElementToJacobian(2*i+1,2*i+1, -1.0f * centerForceStrength);
+        }
+    }
+
+    // Triangle area forces
+    if (area_forces_)
+    {
+        //For each triangle : from http://cg.informatik.uni-freiburg.de/course_notes/sim_03_masspoint.pdf
+        /*for (unsigned int k = 0; k < body_.triangles.size(); k++) {
+            float ka = area_stiffness_;
+            Triangle &triangle = body_.triangles[k];
+
+            float C = triangle.area()-triangle.rest_area;
+            // Sommets
+            const vec2 &pt0 = triangle.particle0->position;
+            const vec2 &pt1 = triangle.particle1->position;
+            const vec2 &pt2 = triangle.particle2->position;
+
+            vec2 F0 = - ka*C * computeDerivateAreaTriangle(pt0, pt1, pt2);
+            vec2 F1 = - ka*C * computeDerivateAreaTriangle(pt1, pt2, pt0);
+            vec2 F2 = - ka*C * computeDerivateAreaTriangle(pt2, pt0, pt1);
+        }*/
+    }
 }
 
 //=============================================================================

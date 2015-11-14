@@ -111,7 +111,7 @@ private: // parameter settings
     enum { Euler, Midpoint, Verlet, Implicit } integration_;
 
     /// paramters: external force type
-    enum { None, Center, Gravitation } external_force_;
+    enum { None, Center, Gravitation,  } external_force_;
 
     /// parameter: how to handle collisiont
     enum { Force_based, Impulse_based } collisions_;
@@ -124,6 +124,9 @@ private: // parameter settings
 
     /// parameter: visualize particle forces?
     bool show_forces_;
+
+    /// parameter: visualize particle forces?
+    bool equilibrium_forces_;
 
 private: // simulation data
     /// the mass spring system to be simulated
