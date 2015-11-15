@@ -720,7 +720,6 @@ Mass_spring_viewer::compute_forces()
 
                     body_.particles.at(i).force -= coeffRepulsion / (dist*dist) * direction;
                 }
-
             }
         }
 
@@ -812,7 +811,7 @@ void Mass_spring_viewer::compute_jacobians (float dt)
             std::cout << xijxijt << std::endl;
             std::cout << dFdxi << std::endl;
 
-            unsigned y = 2 * mouse_spring_.particle_index;
+            unsigned int y = 2 * mouse_spring_.particle_index;
             solver_.addElementToJacobian(y,   y,   dFdxi(0,0));
             solver_.addElementToJacobian(y,   y+1, dFdxi(0,1));
             solver_.addElementToJacobian(y+1, y  , dFdxi(1,0));
@@ -821,45 +820,44 @@ void Mass_spring_viewer::compute_jacobians (float dt)
     }
 
     // Damped springs
-    // TODO
     for (unsigned int i=0; i<body_.springs.size(); ++i){
-        /*Spring &nextSpring = body_.springs[i];
 
-        vec2 pos0 = nextSpring.particle0->position;
-        vec2 pos1 = nextSpring.particle1->position;
+        Spring &nextSpring = body_.springs[i];
+        Particle *part_i = nextSpring.particle0;
+        Particle *part_j = nextSpring.particle1;
 
-        float d = norm(pos0 - pos1);
+        vec2 pij = part_i->position - part_j->position;
+        vec2 pijn = pij / norm(pij);
 
-        float F0xDx0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length)) / d;
-        float F0xDy0 = 0;
-        float F0yDx0 = 0;
-        float F0yDy0 = -1 * (spring_stiffness_*(d-nextSpring.rest_length)) / d;
+        Eigen::Vector2f xij(pijn[0], pijn[1]);
+        Eigen::Matrix2f xijxijt = xij*xij.transpose();
+        Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-nextSpring.rest_length/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
+        dFdxi                += -spring_damping_   * 1/dt * xijxijt; // Dampling term
 
-        // Problably wrong !
-        // y should represent the particule id, not the spring id!!!
-        // And it should have been two id for the two particules !!!
-        unsigned int y1 = 2*nextSpring.particle0->id;
-        unsigned int y2 = 2*nextSpring.particle1->id;
+        unsigned int yi = 2 * part_i->id;
+        unsigned int yj = 2 * part_j->id;
 
-        solver_.addElementToJacobian(y,y,F0xDx0);
-        solver_.addElementToJacobian(y,y + 1,F0xDy0);
-        solver_.addElementToJacobian(y + 1,y,F0yDx0);
-        solver_.addElementToJacobian(y + 1,y + 1,F0yDy0);
+        solver_.addElementToJacobian(yi,   yi,   dFdxi(0,0));
+        solver_.addElementToJacobian(yi,   yi+1, dFdxi(0,1));
+        solver_.addElementToJacobian(yi+1, yi  , dFdxi(1,0));
+        solver_.addElementToJacobian(yi+1, yi+1, dFdxi(1,1));
 
-        solver_.addElementToJacobian(y,y + 2,-1*F0xDx0);
-        solver_.addElementToJacobian(y,y + 3, -1*F0xDy0);
-        solver_.addElementToJacobian(y + 1,y + 2,-1*F0yDx0);
-        solver_.addElementToJacobian(y + 1,y + 3,-1*F0yDy0);
+        solver_.addElementToJacobian(yj,   yj,   dFdxi(0,0));
+        solver_.addElementToJacobian(yj,   yj+1, dFdxi(0,1));
+        solver_.addElementToJacobian(yj+1, yj  , dFdxi(1,0));
+        solver_.addElementToJacobian(yj+1, yj+1, dFdxi(1,1));
 
-        solver_.addElementToJacobian(y + 2,y,-1*F0xDx0);
-        solver_.addElementToJacobian(y + 2,y + 1,-1*F0xDy0);
-        solver_.addElementToJacobian(y + 3,y,-1*F0yDx0);
-        solver_.addElementToJacobian(y + 3,y + 1,-1*F0yDy0);
+        dFdxi = -dFdxi;
 
-        solver_.addElementToJacobian(y + 2,y + 2,F0xDx0);
-        solver_.addElementToJacobian(y + 2,y + 3,F0xDy0);
-        solver_.addElementToJacobian(y + 3,y + 2,F0yDx0);
-        solver_.addElementToJacobian(y + 3,y + 3,F0yDy0);*/
+        solver_.addElementToJacobian(yi,   yj,   dFdxi(0,0));
+        solver_.addElementToJacobian(yi,   yj+1, dFdxi(0,1));
+        solver_.addElementToJacobian(yi+1, yj  , dFdxi(1,0));
+        solver_.addElementToJacobian(yi+1, yj+1, dFdxi(1,1));
+
+        solver_.addElementToJacobian(yj,   yi,   dFdxi(0,0));
+        solver_.addElementToJacobian(yj,   yi+1, dFdxi(0,1));
+        solver_.addElementToJacobian(yj+1, yi  , dFdxi(1,0));
+        solver_.addElementToJacobian(yj+1, yi+1, dFdxi(1,1));
     }
 
     // Force based collisions
