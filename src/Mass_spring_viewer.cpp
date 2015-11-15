@@ -20,6 +20,13 @@
 
 //== IMPLEMENTATION ==========================================================
 
+const float Mass_spring_viewer::planes = {
+        {  0.0,  1.0, 1.0 },
+        {  0.0, -1.0, 1.0 },
+        {  1.0,  0.0, 1.0 },
+        { -1.0,  0.0, 1.0 }/*,
+        { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "NB_PANES" to 5);
+    };
 
 Mass_spring_viewer::
 Mass_spring_viewer(const char* _title, int _width, int _height)
@@ -47,15 +54,6 @@ Mass_spring_viewer(const char* _title, int _width, int _height)
 
 
     // Collisions
-    static float planesSaves[NB_PANES][3] = { // NOT THE CLEANEST WAY TO DO IT !!
-        {  0.0,  1.0, 1.0 },
-        {  0.0, -1.0, 1.0 },
-        {  1.0,  0.0, 1.0 },
-        { -1.0,  0.0, 1.0 }/*,
-        { -0.2, 1.0, 0.8 }*/ // Test with an oblique pane (Warning: change "NB_PANES" to 5)
-    };
-
-    planes = planesSaves;
 
     // Compute the panes normal & cie for the collisions
     for(unsigned int i=0; i<NB_PANES; ++i)

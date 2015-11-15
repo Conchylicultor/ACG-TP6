@@ -149,7 +149,7 @@ private: // simulation data
     ImplicitSolver solver_;
 
     static const int NB_PANES = 4;
-    float (*planes)[3]; // Dirty C syntax
+    static const float planes[NB_PANES][3]; // Dirty C syntax
     vec2 planesNorms[NB_PANES]; // Norms of the plane
     float planesP[NB_PANES]; // Distance from the origin
 };
