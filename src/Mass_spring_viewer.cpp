@@ -68,6 +68,14 @@ Mass_spring_viewer(const char* _title, int _width, int _height)
 
         planesP[i] = planes[i][2]/sqrtCoef;
     }
+
+    // Kinetic energy
+    outputFile.open("results.csv");
+}
+
+Mass_spring_viewer::~Mass_spring_viewer()
+{
+    outputFile.close();
 }
 
 
@@ -535,6 +543,15 @@ void Mass_spring_viewer::time_integration(float dt)
         impulse_based_collisions();
     }
 
+    // Compute kinetic energy
+    float kineticEnergy = 0.0f;
+    for (unsigned int i=0; i<body_.particles.size(); ++i)
+    {
+        kineticEnergy += 0.5f * body_.particles.at(i).mass * norm(body_.particles.at(i).velocity) * norm(body_.particles.at(i).velocity);
+    }
+    outputFile << kineticEnergy << std::endl;
+    std::cout << "Kinetic energy of the system: " << kineticEnergy << " J" << std::endl;
+
 
     glutPostRedisplay();
 }
@@ -794,18 +811,18 @@ void Mass_spring_viewer::compute_jacobians (float dt)
         {
             vec2 pijn = pij / norm(pij);
 
-            std::cout << pij << std::endl;
-            std::cout << pijn << std::endl;
+//            std::cout << pij << std::endl;
+//            std::cout << pijn << std::endl;
 
             Eigen::Vector2f xij(pijn[0], pijn[1]);
             Eigen::Matrix2f xijxijt = xij*xij.transpose();
-            //Eigen::Matrix2f dFdxi = -spring_stiffness_ * ( (1-0/norm(pij)) * (Eigen::Matrix2f::Identity()-xijxijt) + xijxijt ); // Spring term
+
             Eigen::Matrix2f dFdxi = -spring_stiffness_ * Eigen::Matrix2f::Identity(); // Spring term
             dFdxi                += -spring_damping_   * 1/dt * xijxijt;// Dampling term
 
-            std::cout << xij << std::endl;
-            std::cout << xijxijt << std::endl;
-            std::cout << dFdxi << std::endl;
+//            std::cout << xij << std::endl;
+//            std::cout << xijxijt << std::endl;
+//            std::cout << dFdxi << std::endl;
 
             unsigned int y = 2 * mouse_spring_.particle_index;
             solver_.addElementToJacobian(y,   y,   dFdxi(0,0));

@@ -20,6 +20,7 @@
 #include "utils/Viewer_2D.h"
 #include "utils/vec2.h"
 #include <vector>
+#include <fstream>
 
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
@@ -61,6 +62,8 @@ class Mass_spring_viewer : public Viewer_2D
 public:
     /// constructor
     Mass_spring_viewer(const char* _title, int _width, int _height);
+    /// destructor
+    ~Mass_spring_viewer();
 
 private: // GUI functions
     /// draw scene
@@ -148,10 +151,14 @@ private: // simulation data
 
     ImplicitSolver solver_;
 
+    // Collisions planes
     static const int NB_PANES = 4;
     static float planes[NB_PANES][3]; // Dirty C syntax
     vec2 planesNorms[NB_PANES]; // Norms of the plane
     float planesP[NB_PANES]; // Distance from the origin
+
+    // For recording
+    std::ofstream outputFile;
 };
 
 
