@@ -759,19 +759,20 @@ void Mass_spring_viewer::impulse_based_collisions()
 
 //=============================================================================
 
-void computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2 &pt2, int row, int col,float C, ImplicitSolver &solver_){
+void computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2 &pt2, int row, int col, ImplicitSolver &solver_){
     // compute the Jacobian of triangle area for one force Fpt0 and one particule pt0
 
-    float DFxDptx = Fpt0[0]*(pt1[1]-pt2[1])/C;
-    float DFxDpty = Fpt0[0]*(pt2[0]-pt1[0])/C;
-    float DFyDptx = Fpt0[1]*(pt1[1]-pt2[1])/C;
-    float DFyDpty = Fpt0[1]*(pt2[0]-pt1[0])/C;
+    float DFxDptx = Fpt0[0]*(pt1[1]-pt2[1]);
+    float DFxDpty = Fpt0[0]*(pt2[0]-pt1[0]);
+    float DFyDptx = Fpt0[1]*(pt1[1]-pt2[1]);
+    float DFyDpty = Fpt0[1]*(pt2[0]-pt1[0]);
 
     solver_.addElementToJacobian(row,col,DFxDptx);
     solver_.addElementToJacobian(row,col+1,DFxDpty);
     solver_.addElementToJacobian(row+1,col,DFyDptx);
     solver_.addElementToJacobian(row+1,col+1,DFyDpty);
 }
+
 
 //=============================================================================
 
@@ -914,16 +915,16 @@ void Mass_spring_viewer::compute_jacobians (float dt)
 
 
             vec2 Fpt[3];
-            Fpt[0] = - ka*C * computeDerivateAreaTriangle(pt[0]->position, pt[1]->position, pt[2]->position);
-            Fpt[1] = - ka*C * computeDerivateAreaTriangle(pt[1]->position, pt[2]->position, pt[0]->position);
-            Fpt[2] = - ka*C * computeDerivateAreaTriangle(pt[2]->position, pt[0]->position, pt[1]->position);
+            Fpt[0] = - ka * computeDerivateAreaTriangle(pt[0]->position, pt[1]->position, pt[2]->position);
+            Fpt[1] = - ka * computeDerivateAreaTriangle(pt[1]->position, pt[2]->position, pt[0]->position);
+            Fpt[2] = - ka * computeDerivateAreaTriangle(pt[2]->position, pt[0]->position, pt[1]->position);
 
             // Double boucle : pour chaque force Fj et pour chaque particule pi
             for (int pi = 0 ; pi<3 ; pi++) {
                 for (int Fj = 0 ; Fj<3; Fj++) {
                     int row = 2*(pt[Fj]->id);
                     int col = 2*(pt[pi%3]->id);
-                    computeJacobian_TriangleArea(Fpt[Fj],pt[(pi+1)%3]->position,pt[(pi+2)%3]->position,row,col,C,solver_);
+                    computeJacobian_TriangleArea(Fpt[Fj],pt[(pi+1)%3]->position,pt[(pi+2)%3]->position,row,col,solver_);
                 }
             }
 
