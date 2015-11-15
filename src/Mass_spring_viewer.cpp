@@ -770,7 +770,7 @@ void computeJacobian_TriangleArea (const vec2 &Fpt0, const vec2 &pt1, const vec2
     float DFyDpty = Fpt0[1]*(pt2[0]-pt1[0])/C;
 
     solver_.addElementToJacobian(row,col,DFxDptx);
-    solver_.addElementToJacobian(row,col+1,DFyDpty);
+    solver_.addElementToJacobian(row,col+1,DFxDpty);
     solver_.addElementToJacobian(row+1,col,DFyDptx);
     solver_.addElementToJacobian(row+1,col+1,DFyDpty);
 }
