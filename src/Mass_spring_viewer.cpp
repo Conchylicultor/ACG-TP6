@@ -20,7 +20,7 @@
 
 //== IMPLEMENTATION ==========================================================
 
-const float Mass_spring_viewer::planes = {
+float Mass_spring_viewer::planes[NB_PANES][3] = {
         {  0.0,  1.0, 1.0 },
         {  0.0, -1.0, 1.0 },
         {  1.0,  0.0, 1.0 },
