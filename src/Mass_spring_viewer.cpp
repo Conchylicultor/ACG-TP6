@@ -720,7 +720,6 @@ Mass_spring_viewer::compute_forces()
                 }
             }
         }
-
     }
 }
 
@@ -788,8 +787,6 @@ void Mass_spring_viewer::compute_jacobians (float dt)
     // Mouse spring
     if (mouse_spring_.active)
     {
-        // http://blog.mmacklin.com/2012/05/04/implicitsprings/
-
         Particle& part_i = body_.particles[mouse_spring_.particle_index];
 
         vec2 pij = part_i.position - mouse_spring_.mouse_position;
@@ -909,25 +906,28 @@ void Mass_spring_viewer::compute_jacobians (float dt)
             float ka = area_stiffness_;
             Triangle &triangle = body_.triangles[k];
 
-            float C = triangle.area()-triangle.rest_area;
             // Sommets
             Particle* pt[3] = {triangle.particle0, triangle.particle1, triangle.particle2};
-
 
             vec2 Fpt[3];
             Fpt[0] = - ka * computeDerivateAreaTriangle(pt[0]->position, pt[1]->position, pt[2]->position);
             Fpt[1] = - ka * computeDerivateAreaTriangle(pt[1]->position, pt[2]->position, pt[0]->position);
             Fpt[2] = - ka * computeDerivateAreaTriangle(pt[2]->position, pt[0]->position, pt[1]->position);
 
-            // Double boucle : pour chaque force Fj et pour chaque particule pi
+            // Double boucle : for each force Fj and for each particle pi
             for (int pi = 0 ; pi<3 ; pi++) {
                 for (int Fj = 0 ; Fj<3; Fj++) {
+
                     int row = 2*(pt[Fj]->id);
                     int col = 2*(pt[pi%3]->id);
-                    computeJacobian_TriangleArea(Fpt[Fj],pt[(pi+1)%3]->position,pt[(pi+2)%3]->position,row,col,solver_);
+
+                    computeJacobian_TriangleArea(Fpt[Fj],
+                                                 pt[(pi+1)%3]->position,
+                                                 pt[(pi+2)%3]->position,
+                                                 row,col,
+                                                 solver_);
                 }
             }
-
         }
     }
 }
